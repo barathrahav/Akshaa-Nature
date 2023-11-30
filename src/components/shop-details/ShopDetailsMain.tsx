@@ -19,12 +19,16 @@ import GetRatting from "@/hooks/GetRatting";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { wishlist_product } from "@/redux/slices/wishlistSlice";
-import { productData } from "@/data/json-data/product-data";
-const ShopDetailsMain = ({ id }: any) => {
+import axios from 'axios';
+//import { productData } from "@/data/json-data/product-data";
+//const ShopDetailsMain = ({ id }: any) => {
+
+const ShopDetailsMain = ({ myProduct }: { myProduct: CartProductTypeTwo }) => {
   const dispatch = useDispatch();
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
-  const product = productData.filter((item) => item._id === id);
-  const myProduct: CartProductTypeTwo = product[0];
+  //const product = productData.filter((item) => item._id === id);
+  //const myProduct: CartProductTypeTwo = product[0];
+
   const handleAddToCart = (product: CartProductTypeTwo) => {
     dispatch(cart_product(product));
   };
@@ -37,6 +41,7 @@ const ShopDetailsMain = ({ id }: any) => {
     (state: RootState) => state.cart.cartProducts
   );
   const quantity = cartProducts.find((item) => item?._id === myProduct?._id);
+  
   const totalCart = quantity?.totalCard;
   return (
     <>
@@ -139,22 +144,24 @@ const ShopDetailsMain = ({ id }: any) => {
                           <li>
                             <a href="#">
                               <GetRatting
-                                averageRating={myProduct.averageRating}
+                                averageRating={myProduct?.averageRating || 0}
                               />
                             </a>
                           </li>
 
-                          <li className="review-total">
-                            {" "}
-                            <a href="#">
+                          {myProduct && (
+                            <li className="review-total">
                               {" "}
-                              ({" "}
-                              {`${myProduct.numRatings} ${
-                               myProduct.numRatings <= 1 ? "Rating" : "Ratings"
-                              }`}{" "}
-                              )
-                            </a>
-                          </li>
+                              <a href="#">
+                                {" "}
+                                ({" "}
+                                {`${myProduct.numRatings} ${myProduct.numRatings <= 1 ? "Rating" : "Ratings"
+                                  }`}{" "}
+                                )
+                              </a>
+                            </li>
+                          )}
+
                         </ul>
                       </div>
                       <h3>{myProduct?.productName}</h3>
@@ -288,9 +295,7 @@ const ShopDetailsMain = ({ id }: any) => {
                   </div>
                 </div>
               </div>
-              <ShopDetailsReview
-                product={myProduct && myProduct}
-              />
+              <ShopDetailsReview product={myProduct && myProduct} />
             </div>
           </div>
         </div>
@@ -298,11 +303,33 @@ const ShopDetailsMain = ({ id }: any) => {
 
       <div className="bd-related-Product__area mb-95">
         <div className="small-container container">
-          <RelatedProduct/>
+          <RelatedProduct />
         </div>
       </div>
     </>
   );
 };
+
+export async function getServerSideProps({ params }: any) {
+  const productId = params.id;
+
+  try {
+    // Fetch product data from the Strapi backend
+    const response = await axios.get(`http://localhost:1337/api/products/${productId}`);
+    const product = response.data;
+
+    // Pass the product data as a prop to the component
+    return {
+      props: {
+        myProduct: product,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching product data:', error);
+    return {
+      notFound: true,
+    };
+  }
+}
 
 export default ShopDetailsMain;
