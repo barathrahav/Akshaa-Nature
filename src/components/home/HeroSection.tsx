@@ -1,22 +1,44 @@
 import Link from 'next/link';
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ModalVideo from 'react-modal-video';
-import thumb1 from "../../../public/assets/img/banner/banner-1.jpg"
-import thumb2 from "../../../public/assets/img/banner/banner-line.png"
+// import thumb1 from "../../../public/assets/img/banner/banner-1.jpg"
+// import thumb2 from "../../../public/assets/img/banner/banner-line.png"
 import Image from 'next/image';
 import HeroSlider from './HeroSlider';
+import axios from 'axios';
+import nextConfig from "../../../next.config"
 const HeroSection = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [thumb1, setThumb1] = useState(''); 
     const openVideoModal = () => setIsOpen(!isOpen);
+    
+    useEffect(() => {
+        const fetchThumb1 = async () => {
+          try {
+            const response = await axios.get('http://localhost:1337/api/banners?populate=*');
+            //console.log("test",response.data);
+            //console.log("test",nextConfig.api_url+response.data.data[0].attributes.Banner_image.data[0].attributes.url);
+            if (response.data) {
+              setThumb1(nextConfig.api_url+response.data.data[0].attributes.Banner_image.data[0].attributes.url);
+              
+            }
+          } catch (error) {
+            console.error('Error fetching thumb1 image:', error);
+          }
+        };
+    
+        fetchThumb1();
+      }, []);
+
     return (
         <section className="bd-banner__area grey-bg banner__overlay banner__height-1 p-relative">
             <div className="bd-banner__image-1">
-                <Image src={thumb1} alt="banner-img" />
+                <img src={thumb1} alt="banner-img" width={450} height={330} />
             </div>
-            <div className="bd-banner__line">
-                <Image src={thumb2} alt="banner-line" />
-            </div>
+            {/* <div className="bd-banner__line">
+                <img src={thumb1} alt="banner-line" width={100} height={100} />
+            </div> */}
             <div className="container">
                 <div className="row g-0 align-items-center">
                     <div className="col-xxl-7 col-xl-6 col-lg-6">

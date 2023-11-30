@@ -1,13 +1,36 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
 import { EffectFade, Pagination, Scrollbar, A11y, Autoplay, } from 'swiper';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import CountUpContent from '../common/counter/CountUpContent';
-import thumbOne from "../../../public/assets/img/banner/slider/slider-01.jpg"
-import thumbTow from "../../../public/assets/img/banner/slider/slider-02.jpg"
-import thumbThree from "../../../public/assets/img/banner/slider/slider-03.jpg"
+// import thumbOne from "../../../public/assets/img/banner/slider/slider-01.jpg"
+// import thumbTow from "../../../public/assets/img/banner/slider/slider-02.jpg"
+// import thumbThree from "../../../public/assets/img/banner/slider/slider-03.jpg"
 import Image from 'next/image';
+import axios from 'axios';
+import nextConfig from "../../../next.config"
 
 const HeroSlider = () => {
+    const [thumb1, setThumb1] = useState(''); 
+
+    useEffect(() => {
+        const fetchThumb1 = async () => {
+          try {
+            const response = await axios.get('http://localhost:1337/api/banners?populate=*');
+            //console.log("test",response.data);
+            //console.log("test",nextConfig.api_url+response.data.data[0].attributes.Banner_image.data[0].attributes.url);
+            if (response.data) {
+              setThumb1(nextConfig.api_url+response.data.data[0].attributes.Banner_image.data[0].attributes.url);
+              
+            }
+          } catch (error) {
+            console.error('Error fetching thumb1 image:', error);
+          }
+        };
+    
+        fetchThumb1();
+      }, []);
+
     return (
         <div className="bd-banner__right p-relative z-index-1 mb-60">
             <div className="bd-banner__active  swiper-container">
@@ -31,11 +54,11 @@ const HeroSlider = () => {
                         <SwiperSlide>
                             <div>
                                 <div className="bd-banner__image-2">
-                                    <Image src={thumbOne} alt="banner-img" />
+                                    <img src={thumb1} alt="banner-img" width={500} height={650} />
                                 </div>
                             </div>
                         </SwiperSlide>
-                        <SwiperSlide>
+                        {/* <SwiperSlide>
                             <div>
                                 <div className="bd-banner__image-2">
                                 <Image src={thumbTow} alt="banner-img" />
@@ -48,7 +71,7 @@ const HeroSlider = () => {
                                 <Image src={thumbThree}  alt="banner-img" />
                                 </div>
                             </div>
-                        </SwiperSlide>
+                        </SwiperSlide> */}
                     </Swiper>
                 </div>
             </div>
