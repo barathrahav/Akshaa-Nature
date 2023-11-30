@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode, Thumbs, Controller, Navigation } from "swiper";
@@ -18,12 +18,29 @@ import GetRatting from "@/hooks/GetRatting";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { CartProductTypeTwo } from "@/interFace/interFace";
-import { productData } from "@/data/json-data/product-data";
+//import { productData } from "@/data/json-data/product-data";
+import axios from "axios";
+
 const ProductModal = () => {
   const { modalId } = useGlobalContext();
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
-  const product = productData.filter((item) => item?._id === modalId);
-  const myProduct: CartProductTypeTwo = product[0];
+  const [product, setProduct] = useState<any>(null);
+
+  useEffect(() => {
+    const apiUrl = `http://localhost:1337/api/products?populate=*`;
+
+    axios
+      .get(apiUrl)
+      .then((response) => {
+        setProduct(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching product data:", error);
+      });
+  }, [modalId]);
+
+  // const product = productData.filter((item) => item?._id === modalId);
+  const myProduct: CartProductTypeTwo = product ? product[0] : null;
   const cartProducts = useSelector(
     (state: RootState) => state.cart.cartProducts
   );
