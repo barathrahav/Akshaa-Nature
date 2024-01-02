@@ -1,6 +1,6 @@
 import { blogDataType } from "@/interFace/api-interFace";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import thumb from "../../../public/assets/img/news/news-02.jpg";
 import Image from "next/image";
 import BlogComments from "./BlogComments";
@@ -11,10 +11,95 @@ import BlogSidebarBlogs from "./BlogSidebarBlogs";
 import BlogSidebarCategory from "./BlogSidebarCategory";
 import BlogSidebarTags from "./BlogSidebarTags";
 import { idType } from "@/interFace/interFace";
-import { blogData } from "@/data/json-data/blog-data";
-const BlogDetailsArea = ({id}:idType) => {
-  const blog = blogData.filter((item)=> item._id === id)
-  const item:blogDataType = blog[0]
+// import { blogData } from "@/data/json-data/blog-data";
+import axios from "axios";
+
+// Interface for the blog post from the API
+interface BlogPost {
+  id: number;
+  attributes: {
+    title: string;
+    blogDetails: string;
+    date: string;
+    author: string;
+    authorEmail: string;
+    img: {
+      data: {
+        id: number;
+        attributes: {
+          url: string;
+        };
+      };
+    };
+  };
+}
+
+const BlogDetailsArea = ({ id }: idType) => {
+  // const blog = blogData.filter((item)=> item._id === id)
+  // const item:blogDataType = blog[0]
+
+  const [blog, setBlog] = useState<blogDataType | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const apiUrl = `http://localhost:1337/api/blog-datas?populate=*`;
+        const response = await axios.get(apiUrl);
+        console.log("Response data:", response.data);
+        
+        if (
+          response.data &&
+          Array.isArray(response.data.data) &&
+          response.data.data.length > 0
+        ) {
+          const selectedBlog = response.data.data.find(
+            (post: BlogPost) => post.id === parseInt(id as string)
+          );
+          
+          console.log("Response data:", response.data);
+
+          if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+            console.log("Selected blog:", selectedBlog);
+          } else {
+            console.error("Invalid response structure:", response);
+            setBlog(null);
+          }
+          if (selectedBlog) {
+            const blogData: blogDataType = {
+              _id: selectedBlog.id.toString(),
+              title: selectedBlog.attributes.title,
+              blogDetails: selectedBlog.attributes.blogDetails,
+              date: selectedBlog.attributes.date,
+              author: selectedBlog.attributes.author,
+              comment: selectedBlog.attributes.comments ? selectedBlog.attributes.comments.length : 0,
+              img: selectedBlog.attributes.img.data?.attributes.url || "",
+              commentsArray: [],
+              authorEmail: selectedBlog.attributes.authorEmail,
+              response: undefined,
+            };
+          
+            setBlog(blogData);
+          } else {
+            console.error(`Blog post with ID ${id} not found.`);
+            setBlog(null);
+          }
+        } else {
+          console.error("Invalid response structure:", response);
+          setBlog(null);
+        }
+      } catch (error) {
+        console.error("Error fetching blog details:", error);
+        setBlog(null);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  if (!blog) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
       <div className="blog-area pt-115 pb-100">
@@ -26,7 +111,7 @@ const BlogDetailsArea = ({id}:idType) => {
                   <div className="blog-wrapper position-relative blog-details-wrapper mb-30">
                     <div className="blog-thumb ">
                       <Image
-                        src={item?.img}
+                        src={blog.img}
                         width={500}
                         height={500}
                         style={{ width: "100%", height: "auto" }}
@@ -37,24 +122,24 @@ const BlogDetailsArea = ({id}:idType) => {
                       <div className="blog-meta">
                         <div className="blog-date">
                           <i className="fa-solid fa-calendar-days"></i>
-                          <span>{item?.date}</span>
+                          <span>{blog.date}</span>
                         </div>
                         <div className="blog-user">
                           <i className="fa-regular fa-user"></i>
-                          <span>{item?.author}</span>
+                          <span>{blog.author}</span>
                         </div>
                         <div className="blog-comrent">
                           <i className="fal fa-comments"></i>
                           <span>
-                            {item?.comment > 1
-                              ? `${item?.comment} comments`
-                              : `${item?.comment} comment`}
+                            {blog.comment > 1
+                              ? `${blog.comment} comments`
+                              : `${blog.comment} comment`}
                           </span>
                         </div>
                       </div>
                       <div className="blog-content">
-                        <h3>{item?.title}</h3>
-                        <p> {item?.blogDetails} </p>
+                        <h3>{blog.title}</h3>
+                        <p> {blog.blogDetails} </p>
                         <blockquote>
                           <p>
                             Tosser argy-bargy mush loo at public school
@@ -117,8 +202,8 @@ const BlogDetailsArea = ({id}:idType) => {
                     </div>
                   </div>
                 </div>
-                <BlogComments/>
-                <BlogCommentForm/>
+                <BlogComments />
+                <BlogCommentForm />
               </div>
             </div>
             <div className="col-xl-4 col-lg-8 col-md-8">
