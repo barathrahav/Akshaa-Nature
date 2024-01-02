@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FreeMode, Thumbs, Controller, Navigation } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css/bundle";
@@ -23,23 +23,66 @@ import axios from 'axios';
 //import { productData } from "@/data/json-data/product-data";
 //const ShopDetailsMain = ({ id }: any) => {
 
-const ShopDetailsMain = ({ myProduct }: { myProduct: CartProductTypeTwo }) => {
+interface ShopDetailsMainProps {
+  selectedProduct: CartProductTypeTwo | null;
+}
+
+// const ShopDetailsMain = ({ myProduct: initialProduct }: { myProduct: CartProductTypeTwo | null }) => {
+const ShopDetailsMain: React.FC<ShopDetailsMainProps> = ({ selectedProduct }) => {
   const dispatch = useDispatch();
   const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
-  //const product = productData.filter((item) => item._id === id);
-  //const myProduct: CartProductTypeTwo = product[0];
+  const [myProduct, setMyProduct] = useState<CartProductTypeTwo | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        setLoading(true);
+        if (selectedProduct) {
+          const response = await axios.get(`http://localhost:1337/api/products/${selectedProduct.id}?populate=*`);
+          setMyProduct(response.data as CartProductTypeTwo);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching product data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchProductData();
+  }, [selectedProduct]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // Check if myProduct is null before using it
+  if (!myProduct) {
+    return <div>Product not found</div>;
+  }
 
   const handleAddToCart = (product: CartProductTypeTwo) => {
     dispatch(cart_product(product));
   };
 
+  // const handleAddToCart = () => {
+  //   if (selectedProduct) {
+  //     dispatch(cart_product(selectedProduct));
+  //   }
+  // };
+
   const handDecressCart = (product: CartProductTypeTwo) => {
     dispatch(decrease_quantity(product));
   };
 
-  const cartProducts = useSelector(
-    (state: RootState) => state.cart.cartProducts
-  );
+  // const handDecressCart = () => {
+  //   if (selectedProduct) {
+  //     dispatch(decrease_quantity(selectedProduct));
+  //   }
+  // };
+
+  const cartProducts = useSelector((state: RootState) => state.cart.cartProducts);
+  
   const quantity = cartProducts.find((item) => item?._id === myProduct?._id);
   
   const totalCart = quantity?.totalCard;
@@ -309,27 +352,5 @@ const ShopDetailsMain = ({ myProduct }: { myProduct: CartProductTypeTwo }) => {
     </>
   );
 };
-
-export async function getServerSideProps({ params }: any) {
-  const productId = params.id;
-
-  try {
-    // Fetch product data from the Strapi backend
-    const response = await axios.get(`http://localhost:1337/api/products/${productId}`);
-    const product = response.data;
-
-    // Pass the product data as a prop to the component
-    return {
-      props: {
-        myProduct: product,
-      },
-    };
-  } catch (error) {
-    console.error('Error fetching product data:', error);
-    return {
-      notFound: true,
-    };
-  }
-}
 
 export default ShopDetailsMain;
