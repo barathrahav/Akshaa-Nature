@@ -12,12 +12,17 @@ import useGlobalContext from "@/hooks/use-context";
 import { wishlist_product } from "@/redux/slices/wishlistSlice";
 import GetRatting from "@/hooks/GetRatting";
 import { categoryData } from "@/data/json-data/category-data";
-import { productData } from "@/data/json-data/product-data";
+// import { productData } from "@/data/json-data/product-data";
 import axios from "axios";
 import { CartProductTypeTwo, Product } from "@/interFace/interFace";
-import nextConfig from "../../../next.config";
+// import nextConfig from "../../../next.config";
 
-const ProductSlider = () => {
+interface ProductSliderProps {
+  onProductSelect: (product: CartProductTypeTwo) => void;
+}
+
+// const ProductSlider = () => {
+const ProductSlider: React.FC<ProductSliderProps> = ({ onProductSelect }) => {
   const { setOpenModal, openModal, setModalId } = useGlobalContext();
   const dispatch = useDispatch();
   const [searchValue, setSearchValue] = useState("fruit & vegetables");
@@ -28,45 +33,48 @@ const ProductSlider = () => {
 
   useEffect(() => {
     const apiUrl = "http://localhost:1337/api/products?populate=*";
-  
+
     axios
       .get(apiUrl)
       .then((response) => {
         if (response.data && Array.isArray(response.data.data)) {
-          const transformedProducts = response.data.data.map((item: { attributes: any; id?: any }) => {
-            const {
-              id,
-              attributes: {
-                product_title: productName,
-                product_rating: averageRating,
-                product_price: price,
-                product_description: productDetails,
-                product_image: { data },
-                product_shortdesc: subcategoryName,
-                product_status: productStatus,
-              },
-            } = item;
-  
-            const imageUrl = data.map((imageData: any) => imageData.attributes.url);
-  
-            return {
-              _id: id.toString(),
-              categoryName: item.attributes.product_category,
-              oldPrice: item.attributes.product_price,
-              price: item.attributes.product_price,
-              averageRating: item.attributes.product_rating,
-              productQuantity: 0,
-              subcategoryName: subcategoryName,
-              img: imageUrl,
-              date: "Some Date",
-              offer: false,
-              offerPersent: 0,
-              productStatus: item.attributes.product_status,
-              numRatings: item.attributes.product_rating,
-              ...productDetails,
-            };
-          });
-  
+          const transformedProducts = response.data.data.map(
+            (item: { attributes: any; id?: any }) => {
+              const {
+                id,
+                attributes: {
+                  productName,
+                  averageRating,
+                  oldPrice,
+                  productDetails,
+                  img: { data },
+                  subcategoryName,
+                  productStatus,
+                },
+              } = item;
+
+              const imageUrl =
+                data?.map((imageData: any) => imageData.attributes.url) || [];
+
+              return {
+                _id: id.toString(),
+                categoryName: item.attributes.categoryName || "",
+                oldPrice: oldPrice || 0,
+                price: oldPrice || 0,
+                averageRating: averageRating || 0,
+                productQuantity: 0,
+                subcategoryName: subcategoryName || "",
+                img: imageUrl,
+                date: "Some Date",
+                offer: false,
+                offerPersent: 0,
+                productStatus: productStatus || "",
+                numRatings: averageRating || 0,
+                ...productDetails,
+              };
+            }
+          );
+
           setProducts(transformedProducts);
         } else {
           console.error("Invalid response data format:", response.data);
@@ -76,7 +84,6 @@ const ProductSlider = () => {
         console.error("Error fetching product data:", error);
       });
   }, []);
-  
 
   const handleMoldalData = (id: string) => {
     if (id) {
@@ -180,14 +187,20 @@ const ProductSlider = () => {
                                             <Link
                                               href={`/shop-details/${item._id}`}
                                             >
-                                              <img
+                                              <Image
+                                                key={item._id}
                                                 width={500}
                                                 height={500}
                                                 style={{
                                                   width: "100%",
                                                   height: "100%",
                                                 }}
-                                                src={item.img}
+                                                src={
+                                                  Array.isArray(item.img) &&
+                                                  item.img.length > 0
+                                                    ? item.img[0]
+                                                    : "/placeholder-image.jpg"
+                                                }
                                                 alt="product-img"
                                               />
                                             </Link>
@@ -197,9 +210,10 @@ const ProductSlider = () => {
                                                 data-toggle="tooltip"
                                                 data-placement="top"
                                                 title="Quick Shop"
-                                                onClick={() =>
-                                                  dispatch(cart_product(item))
-                                                }
+                                                onClick={() => {
+                                                  dispatch(cart_product(item));
+                                                  onProductSelect(item); // Notify parent component about the selected product
+                                                }}
                                               >
                                                 <i className="fal fa-cart-arrow-down"></i>
                                               </span>
